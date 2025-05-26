@@ -1,0 +1,11 @@
+# 빌드 폴더
+/bin/
+/obj/
+/*.exe
+
+# VSCode 설정
+.vscode/
+
+# OS별 파일
+Thumbs.db
+.DS_Store
