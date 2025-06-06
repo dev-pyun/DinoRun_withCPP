@@ -1,5 +1,29 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
+#include <sstream>     // for string stream
+#include <iomanip>     // for number formatting
+#include "Player.hpp" // include player class
+
+
+/**
+ * TODO: * 1. Add collision detection function
+ *    - Check if two rectangles intersect
+ * 2. refactor the code to use this function
+ *  Obstacle class refactor
+ *  Obstacle Manager class refactor for spawning and managing obstacles
+ *  Collision detection refactor
+ *  Game class refactor
+ * 
+ * 3. Add a scoring system and display it on the screen and refactor the code
+ * 
+ * 4. Add a high score system and display it on the screen
+ * 
+ * 5. make the game more challenging by increasing the speed of obstacles over time
+ *  randomize the obstacle size and position
+ *  add bird obstacles that fly over the dino
+ * 
+ * 6. Add a game item system that gives the dino a power-up or a bonus life
+ */
 
 bool checkCollision(const sf::RectangleShape& rect1, const sf::RectangleShape& rect2) {
     sf::FloatRect bounds1 = rect1.getGlobalBounds();
@@ -16,16 +40,7 @@ int main(){
     );
 
     // dinosaur settings
-    sf::RectangleShape dino;
-    dino.setSize(sf::Vector2f(40, 60));          // 크기 설정 (가로40, 세로60)
-    dino.setFillColor(sf::Color::Green);         // green color
-    dino.setOutlineColor(sf::Color::Black);      // outline color
-    dino.setOutlineThickness(2);                 // outline thickness
-    
-    double dinoX = 100; // dino initial x coordinate
-    double dinoY = 400; // dino initial y coordinate
-    double velocityY = 0; // dino y-axis velocity
-    bool isJumping = false; // dino jumping status
+    Player dino(100, 400); // create a player object at position (100, 400)
     
     // time management for game score
     sf::Clock clock;
@@ -34,18 +49,36 @@ int main(){
 
     // game status variable
     bool gameOver = false;
+    double gameTime = 0.0;      // whole play time
+    int currentScore = 0;       // current score (increasing with time)
+    int highScore = 0;          // best score in the session
 
     // font settings
     sf::Font font;
     bool fontLoaded = font.loadFromFile("../fonts/arial.ttf"); // load font from file
     
-    sf::Text gameOverText;
+    sf::Text gameOverText;      // game over text
+    sf::Text scoreText;         // current score display
+    sf::Text highScoreText;     // high score display
     if (fontLoaded) {
+        // 1. game over text settings
         gameOverText.setFont(font);
         gameOverText.setString("GAME OVER! Press R to Restart");
         gameOverText.setCharacterSize(30);
         gameOverText.setFillColor(sf::Color::Black);
         gameOverText.setPosition(200, 250);
+
+        // 2. score text settings
+        scoreText.setFont(font);
+        scoreText.setCharacterSize(24);
+        scoreText.setFillColor(sf::Color::Black);
+        scoreText.setPosition(20, 20);  // 화면 왼쪽 위
+
+        // 3. high score text settings
+        highScoreText.setFont(font);
+        highScoreText.setCharacterSize(24);
+        highScoreText.setFillColor(sf::Color::Black);
+        highScoreText.setPosition(20, 50);  // 현재 점수 아래
     }
 
     // main game loop
@@ -60,45 +93,57 @@ int main(){
             
             if (ev.type == sf::Event::KeyPressed) {
                 // **JUMPING LOGIC** when space key is pressed
-                if (ev.key.code == sf::Keyboard::Space || ev.key.code == sf::Keyboard::Up && !isJumping && !gameOver) {
-                    isJumping = true;
-                    velocityY = -400;  // power to jump
+                if ((ev.key.code == sf::Keyboard::Space || ev.key.code == sf::Keyboard::Up)) {
+                    dino.jump(); // call jump method from Player class
                 }
 
                 // **RESTART LOGIC** when R key is pressed
                 // if game is over, pressing R will reset the game
                 if (ev.key.code == sf::Keyboard::R && gameOver) {
+                    // best score update
+                    if (currentScore > highScore) {
+                        highScore = currentScore;
+                    }
+
                     // reseting game variables
                     gameOver = false;
                     obstacles.clear();
                     obstacleTimer = 0;
-                    dinoY = 400;
-                    velocityY = 0;
-                    isJumping = false;
+                    
+                    dino.reset(); // reset player position and state
+
+                    // score variables reset
+                    gameTime = 0.0f;
+                    currentScore = 0;
                 }
             }
         }
 
         // JUMPING PHYSICS
         // if dino is jumping, apply gravity and update position
-        if (!gameOver && isJumping) {
-            velocityY += 800 * deltaTime;
-            dinoY += velocityY * deltaTime;
-            
-            if (dinoY >= 400) {
-                dinoY = 400;
-                velocityY = 0;
-                isJumping = false;
-            }
+        if (!gameOver && dino.getIsJumping()) {
+            dino.update(deltaTime); // update player physics
         }
 
 
         if (!gameOver) {
-            // OBSTACLE LOGIC
-            // every 2 seconds, create a new obstacle
+            // game time update
+            gameTime += deltaTime;                          // time accumulation
             
+            // hardness increases as time goes on
+            double obstacleInterval = 2.0 - (gameTime * 0.01f);  // interval decreases as time goes on
+            if (obstacleInterval < 1.0) obstacleInterval = 1.0f; // min interval limit
+            
+            double obstacleSpeed = 200 + (gameTime * 5);          // speed increases as time goes on
+            if (obstacleSpeed > 400) obstacleSpeed = 400;        // max speed limit
+            
+            // Update score based on game time and speed
+            currentScore = static_cast<int>(gameTime * 10 + (obstacleSpeed / 200 - 1)); // 10 points per second
+
+            // OBSTACLE LOGIC
+            // now obstacles are made faster as time goes on
             obstacleTimer += deltaTime;
-            if (obstacleTimer > 2.0) { // obstacle made every 2 seconds
+            if (obstacleTimer > obstacleInterval) { // obstacle made **faster as time goes on**
                 sf::RectangleShape newObstacle;
                 newObstacle.setSize(sf::Vector2f(30, 50));  // 장애물 크기
                 newObstacle.setFillColor(sf::Color::Red);   // 빨간색
@@ -112,10 +157,11 @@ int main(){
             // move obstacles left, if they go off screen, remove them
             for (int i = obstacles.size() - 1; i >= 0; i--) {
                 // 1. move left at 200 pixels per second
-                obstacles[i].move(-200 * deltaTime, 0);  
+                obstacles[i].move(-obstacleSpeed * deltaTime, 0);  
     
                 // 2. check collision with dino
-                if (checkCollision(dino, obstacles[i])) {
+                if (checkCollision(dino.getShape(), obstacles[i])) {
+                    // if collision occurs, set game over
                     gameOver = true;
                     break; // game stops if collision occurs
                 }
@@ -129,23 +175,36 @@ int main(){
            
         if (!gameOver) {
             // Update dino position
-            dino.setPosition(dinoX, dinoY);  // 새로 추가
+            dino.update(deltaTime); // update player physics
+        }
+
+        // score and high score text update
+        // if font is loaded, update the text
+        if (fontLoaded) {
+            std::stringstream ss;
+            ss << "Score: " << std::setfill('0') << std::setw(6) << currentScore;
+            scoreText.setString(ss.str());
+            
+            std::stringstream hs;
+            hs << "High: " << std::setfill('0') << std::setw(6) << highScore;
+            highScoreText.setString(hs.str());
         }
 
         // Clear the window with a white background
         window.clear(sf::Color::White); 
         
         // Draw the dino and obstacles
-        window.draw(dino);              
-
+        dino.render(window); // render player on screen            
+        
         for (auto& obstacle : obstacles) {
             window.draw(obstacle); // 장애물 그리기
         }
-
+        
         // game over logic
         if (gameOver && fontLoaded) {
             window.draw(gameOverText);
         }
+
 
         window.display();
     }
