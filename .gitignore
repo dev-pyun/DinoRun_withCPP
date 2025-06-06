@@ -3,6 +3,10 @@
 /obj/
 /*.exe
 
+# 글꼴 파일
+/fonts/*.ttf
+
+
 # VSCode 설정
 .vscode/
 
