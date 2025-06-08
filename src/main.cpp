@@ -4,6 +4,7 @@
 #include <iomanip>     // for number formatting
 #include "Player.hpp" // include player class
 #include "ObstacleManager.hpp" // include obstacleManager class
+#include "CollisionManager.hpp" // include collision manager class
 
 
 /**
@@ -14,8 +15,8 @@ TODO:
  *    ✅ Player class refactor - COMPLETED
  *    ✅ Obstacle class refactor - COMPLETED
  *    ✅ Obstacle Manager class refactor for spawning and managing obstacles - COMPLETED
- *    🔄 Collision detection refactor - CURRENT STEP
- *    ⏳ Game class refactor - NEXT
+ *    ✅ Collision detection refactor - CURRENT STEP
+ *    🔄 Game class refactor - NEXT
  * 
  * 🔄 3. Add a scoring system and display it on the screen - COMPLETED
  * 
@@ -56,7 +57,7 @@ int main(){
 
     // dinosaur settings
     Player dino(100, 400); // create a player object at position (100, 400)
-    /*====== new Obstacle management system application ======= */
+    // Obstacle management system application 
     ObstacleManager obstacleManager;     // Obstacle management system application
     
     // time management for game score
@@ -139,7 +140,7 @@ int main(){
         }
 
 
-        // ======= GAME LOGIC UPDATE =======
+        // ==== GAME LOGIC UPDATE : collision manager update ====
         if (!gameOver) {
             // Time tracking for score and difficulty calculation
             gameTime += deltaTime;
@@ -153,17 +154,17 @@ int main(){
             dino.update(deltaTime);
             
             // Obstacle system update - handles spawning, movement, difficulty scaling
-            // This single line replaces ~40 lines of scattered obstacle logic!
             obstacleManager.update(deltaTime, gameTime);
             
-            // Collision detection - clean and readable
-            if (checkPlayerObstacleCollision(dino, obstacleManager)) {
+            // ===== Collision Detection - Now Using CollisionManager! =====
+            // Before: scattered collision logic mixed with game logic
+            // After: clean, centralized collision detection through dedicated manager
+            if (CollisionManager::checkPlayerObstacleCollision(dino, obstacleManager)) {
                 gameOver = true;
             }
         }
-        // ======= END OF GAME LOGIC UPDATE =======
 
-        // score and high score text update
+        // Score and high score text
         // if font is loaded, update the text
         if (fontLoaded) {
             std::stringstream ss;
