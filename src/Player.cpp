@@ -2,7 +2,7 @@
 
 const double Player::GROUND_Y = 400.0; // Ground level Y coordinate
 const double Player::JUMP_STRENGTH = -400.0; // Initial jump velocity
-const double Player::GRAVITY = 600.0; // Gravity acceleration
+const double Player::GRAVITY = 700.0; // Gravity acceleration
 
 Player::Player(float startX, float startY) 
     : posX(startX), posY(startY), velocityY(0.0), isJumping(false) {
