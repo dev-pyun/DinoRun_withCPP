@@ -3,32 +3,47 @@
 #include <sstream>     // for string stream
 #include <iomanip>     // for number formatting
 #include "Player.hpp" // include player class
+#include "ObstacleManager.hpp" // include obstacleManager class
 
 
 /**
- * TODO: * 1. Add collision detection function
+TODO: 
+ * ✅ 1. Add collision detection function - COMPLETED
  *    - Check if two rectangles intersect
- * 2. refactor the code to use this function
- *  Obstacle class refactor
- *  Obstacle Manager class refactor for spawning and managing obstacles
- *  Collision detection refactor
- *  Game class refactor
+ * ✅ 2. refactor the code to use this function - IN PROGRESS
+ *    ✅ Player class refactor - COMPLETED
+ *    ✅ Obstacle class refactor - COMPLETED
+ *    ✅ Obstacle Manager class refactor for spawning and managing obstacles - COMPLETED
+ *    🔄 Collision detection refactor - CURRENT STEP
+ *    ⏳ Game class refactor - NEXT
  * 
- * 3. Add a scoring system and display it on the screen and refactor the code
+ * 🔄 3. Add a scoring system and display it on the screen - COMPLETED
  * 
- * 4. Add a high score system and display it on the screen
+ * 🔄 4. Add a high score system and display it on the screen - COMPLETED
  * 
- * 5. make the game more challenging by increasing the speed of obstacles over time
- *  randomize the obstacle size and position
- *  add bird obstacles that fly over the dino
+ * ⏳ 5. make the game more challenging by increasing the speed of obstacles over time - COMPLETED
+ *    ⏳ randomize the obstacle size and position - FUTURE
+ *    ⏳ add bird obstacles that fly over the dino - FUTURE
  * 
- * 6. Add a game item system that gives the dino a power-up or a bonus life
+ * ⏳ 6. Add a game item system that gives the dino a power-up or a bonus life - FUTURE
  */
 
+ // Collision detection function - will be moved to CollisionManager class later
 bool checkCollision(const sf::RectangleShape& rect1, const sf::RectangleShape& rect2) {
     sf::FloatRect bounds1 = rect1.getGlobalBounds();
     sf::FloatRect bounds2 = rect2.getGlobalBounds();
     return bounds1.intersects(bounds2);
+}
+
+// Helper function to check collision between player and all obstacles
+bool checkPlayerObstacleCollision(const Player& player, const ObstacleManager& obstacleManager) {
+    const auto& obstacles = obstacleManager.getObstacles();
+    for (const auto& obstacle : obstacles) {
+        if (checkCollision(player.getShape(), obstacle.getShape())) {
+            return true;  // Collision detected
+        }
+    }
+    return false;  // No collision
 }
 
 int main(){
@@ -41,11 +56,11 @@ int main(){
 
     // dinosaur settings
     Player dino(100, 400); // create a player object at position (100, 400)
+    /*====== new Obstacle management system application ======= */
+    ObstacleManager obstacleManager;     // Obstacle management system application
     
     // time management for game score
     sf::Clock clock;
-    std::vector<sf::RectangleShape> obstacles; // obstacles vector
-    double obstacleTimer = 0; // obstacle timer
 
     // game status variable
     bool gameOver = false;
@@ -60,6 +75,7 @@ int main(){
     sf::Text gameOverText;      // game over text
     sf::Text scoreText;         // current score display
     sf::Text highScoreText;     // high score display
+
     if (fontLoaded) {
         // 1. game over text settings
         gameOverText.setFont(font);
@@ -72,13 +88,13 @@ int main(){
         scoreText.setFont(font);
         scoreText.setCharacterSize(24);
         scoreText.setFillColor(sf::Color::Black);
-        scoreText.setPosition(20, 20);  // 화면 왼쪽 위
+        scoreText.setPosition(20, 20);  // Top-Left corner
 
         // 3. high score text settings
         highScoreText.setFont(font);
         highScoreText.setCharacterSize(24);
         highScoreText.setFillColor(sf::Color::Black);
-        highScoreText.setPosition(20, 50);  // 현재 점수 아래
+        highScoreText.setPosition(20, 50);  // Below current score
     }
 
     // main game loop
@@ -107,14 +123,11 @@ int main(){
 
                     // reseting game variables
                     gameOver = false;
-                    obstacles.clear();
-                    obstacleTimer = 0;
+                    gameTime = 0.0;
+                    currentScore = 0;
                     
                     dino.reset(); // reset player position and state
-
-                    // score variables reset
-                    gameTime = 0.0f;
-                    currentScore = 0;
+                    obstacleManager.clear(); // clear obstacle manager state
                 }
             }
         }
@@ -126,57 +139,29 @@ int main(){
         }
 
 
+        // ======= GAME LOGIC UPDATE =======
         if (!gameOver) {
-            // game time update
-            gameTime += deltaTime;                          // time accumulation
+            // Time tracking for score and difficulty calculation
+            gameTime += deltaTime;
             
-            // hardness increases as time goes on
-            double obstacleInterval = 2.0 - (gameTime * 0.01f);  // interval decreases as time goes on
-            if (obstacleInterval < 1.0) obstacleInterval = 1.0f; // min interval limit
+            // Score calculation with speed bonus (maintaining original formula)
+            // Base score: 10 points per second + speed bonus for increased difficulty
+            double currentSpeed = obstacleManager.getCurrentSpeed();
+            currentScore = static_cast<int>(gameTime * 10 + (currentSpeed / 200 - 1));
             
-            double obstacleSpeed = 200 + (gameTime * 5);          // speed increases as time goes on
-            if (obstacleSpeed > 400) obstacleSpeed = 400;        // max speed limit
+            // Player physics update - handles jump mechanics internally
+            dino.update(deltaTime);
             
-            // Update score based on game time and speed
-            currentScore = static_cast<int>(gameTime * 10 + (obstacleSpeed / 200 - 1)); // 10 points per second
-
-            // OBSTACLE LOGIC
-            // now obstacles are made faster as time goes on
-            obstacleTimer += deltaTime;
-            if (obstacleTimer > obstacleInterval) { // obstacle made **faster as time goes on**
-                sf::RectangleShape newObstacle;
-                newObstacle.setSize(sf::Vector2f(30, 50));  // 장애물 크기
-                newObstacle.setFillColor(sf::Color::Red);   // 빨간색
-                newObstacle.setOutlineColor(sf::Color::Black); // outline color
-                newObstacle.setPosition(800, 410);          // 화면 오른쪽에서 시작
-                obstacles.push_back(newObstacle);           // 벡터에 추가
-                obstacleTimer = 0;  // 타이머 리셋
-            }
-
-            // obstacles moving and check collision and removing
-            // move obstacles left, if they go off screen, remove them
-            for (int i = obstacles.size() - 1; i >= 0; i--) {
-                // 1. move left at 200 pixels per second
-                obstacles[i].move(-obstacleSpeed * deltaTime, 0);  
-    
-                // 2. check collision with dino
-                if (checkCollision(dino.getShape(), obstacles[i])) {
-                    // if collision occurs, set game over
-                    gameOver = true;
-                    break; // game stops if collision occurs
-                }
-                
-                // 3. if obstacle goes off screen, remove it
-                if (obstacles[i].getPosition().x < -50) {
-                    obstacles.erase(obstacles.begin() + i);
-                }
+            // Obstacle system update - handles spawning, movement, difficulty scaling
+            // This single line replaces ~40 lines of scattered obstacle logic!
+            obstacleManager.update(deltaTime, gameTime);
+            
+            // Collision detection - clean and readable
+            if (checkPlayerObstacleCollision(dino, obstacleManager)) {
+                gameOver = true;
             }
         }
-           
-        if (!gameOver) {
-            // Update dino position
-            dino.update(deltaTime); // update player physics
-        }
+        // ======= END OF GAME LOGIC UPDATE =======
 
         // score and high score text update
         // if font is loaded, update the text
@@ -195,16 +180,17 @@ int main(){
         
         // Draw the dino and obstacles
         dino.render(window); // render player on screen            
+        obstacleManager.render(window); // render all obstacles on the screen
         
-        for (auto& obstacle : obstacles) {
-            window.draw(obstacle); // 장애물 그리기
+        // UI text rendering
+        if (fontLoaded) {
+            window.draw(scoreText);      // Display current score
+            window.draw(highScoreText);  // Display high score
+            
+            if (gameOver) {
+                window.draw(gameOverText);  // Display game over message
+            }
         }
-        
-        // game over logic
-        if (gameOver && fontLoaded) {
-            window.draw(gameOverText);
-        }
-
 
         window.display();
     }
