@@ -150,7 +150,7 @@ public:
      * @param scale Scaling factor (1.0 = original size)
      * @return Configured and scaled sf::Sprite object
      */
-    sf::Sprite createSprite(SpriteType spriteType, float scale) const;
+    sf::Sprite createSprite(SpriteType spriteType, double scale) const;
     
     /**
      * Create a sprite with custom size
@@ -223,7 +223,15 @@ private:
      * @return Unique pointer to the created texture
      */
     std::unique_ptr<sf::Texture> createFallbackTexture(sf::Color color, sf::Vector2u size);
-
+    
+    /**
+     * Create all fallback textures when sprite sheets fail to load
+     * Sets up colored rectangles for all game elements
+     * 
+     * @return true if fallback creation successful
+     */
+    bool createFallbackTextures();
+    
 public:
     // ===== Deleted Methods for Singleton Safety =====
     TextureManager(const TextureManager&) = delete;

@@ -6,43 +6,44 @@
 
 std::unique_ptr<TextureManager> TextureManager::instance = nullptr;
 
-// Define sprite file paths - can be easily modified for different asset locations
+// Updated sprite file paths for your actual sprite sheets
 const std::unordered_map<TextureManager::SpriteType, std::string> TextureManager::SPRITE_PATHS = {
-    {SpriteType::DINO_RUNNING_1, "assets/sprites/dino_spritesheet.png"},
-    {SpriteType::DINO_RUNNING_2, "assets/sprites/dino_spritesheet.png"},
-    {SpriteType::DINO_JUMPING, "assets/sprites/dino_spritesheet.png"},
-    {SpriteType::DINO_DUCKING, "assets/sprites/dino_spritesheet.png"},
-    {SpriteType::CACTUS_SMALL, "assets/sprites/obstacle_spritesheet.png"},
-    {SpriteType::CACTUS_LARGE, "assets/sprites/obstacle_spritesheet.png"},
-    {SpriteType::BIRD_FLYING_1, "assets/sprites/bird_spritesheet.png"},
-    {SpriteType::BIRD_FLYING_2, "assets/sprites/bird_spritesheet.png"},
-    {SpriteType::GROUND, "assets/sprites/ground.png"},
-    {SpriteType::CLOUD, "assets/sprites/cloud.png"},
-    {SpriteType::BACKGROUND, "assets/sprites/background.png"}
+    // All dino sprites from the first image
+    {SpriteType::DINO_RUNNING_1, "assets/sprites/dino_sheet.png"},
+    {SpriteType::DINO_RUNNING_2, "assets/sprites/dino_sheet.png"},
+    {SpriteType::DINO_JUMPING, "assets/sprites/dino_sheet.png"},
+    {SpriteType::DINO_DUCKING, "assets/sprites/dino_sheet.png"},
+    
+    // Obstacles and environment from the second image
+    {SpriteType::CACTUS_SMALL, "assets/sprites/obstacles_sheet.png"},
+    {SpriteType::CACTUS_LARGE, "assets/sprites/obstacles_sheet.png"},
+    {SpriteType::BIRD_FLYING_1, "assets/sprites/obstacles_sheet.png"},
+    {SpriteType::BIRD_FLYING_2, "assets/sprites/obstacles_sheet.png"},
+    {SpriteType::CLOUD, "assets/sprites/obstacles_sheet.png"}
 };
 
-// Define sprite rectangles within sprite sheets
-// These coordinates define where each sprite is located in the sprite sheet
+// Precise sprite rectangles based on your actual sprite sheets
 const std::unordered_map<TextureManager::SpriteType, sf::IntRect> TextureManager::DEFAULT_SPRITE_RECTS = {
-    // Dino sprites (assuming 44x47 pixel sprites in a sprite sheet)
-    {SpriteType::DINO_RUNNING_1, sf::IntRect(0, 0, 44, 47)},
-    {SpriteType::DINO_RUNNING_2, sf::IntRect(44, 0, 44, 47)},
-    {SpriteType::DINO_JUMPING, sf::IntRect(88, 0, 44, 47)},
-    {SpriteType::DINO_DUCKING, sf::IntRect(132, 0, 59, 30)},  // Ducking sprite is wider and shorter
+    // Dino sprites from first row of dino_sheet.png (analyzing the first image)
+    {SpriteType::DINO_RUNNING_1, sf::IntRect(76, 6, 44, 47)},    // First running frame
+    {SpriteType::DINO_RUNNING_2, sf::IntRect(132, 6, 44, 47)},   // Second running frame
+    {SpriteType::DINO_JUMPING, sf::IntRect(188, 6, 44, 47)},     // Jumping frame
     
-    // Cactus sprites (assuming different sizes)
-    {SpriteType::CACTUS_SMALL, sf::IntRect(0, 0, 17, 35)},
-    {SpriteType::CACTUS_LARGE, sf::IntRect(17, 0, 25, 50)},
+    // Ducking sprites (wider and shorter)
+    {SpriteType::DINO_DUCKING, sf::IntRect(262, 19, 59, 30)},    // Ducking frame
     
-    // Bird sprites (assuming 46x40 pixel sprites)
-    {SpriteType::BIRD_FLYING_1, sf::IntRect(0, 0, 46, 40)},
-    {SpriteType::BIRD_FLYING_2, sf::IntRect(46, 0, 46, 40)},
+    // Birds from obstacles_sheet.png (top of second image)
+    {SpriteType::BIRD_FLYING_1, sf::IntRect(134, 15, 46, 40)},   // First bird frame
+    {SpriteType::BIRD_FLYING_2, sf::IntRect(180, 15, 46, 40)},   // Second bird frame
     
-    // Environment sprites (full textures)
-    {SpriteType::GROUND, sf::IntRect(0, 0, 2400, 12)},  // Long ground texture for scrolling
-    {SpriteType::CLOUD, sf::IntRect(0, 0, 46, 14)},
-    {SpriteType::BACKGROUND, sf::IntRect(0, 0, 800, 600)}  // Full screen background
+    // Cacti from obstacles_sheet.png
+    {SpriteType::CACTUS_SMALL, sf::IntRect(228, 30, 17, 35)},    // Small cactus
+    {SpriteType::CACTUS_LARGE, sf::IntRect(245, 15, 25, 50)},    // Large cactus
+    
+    // Cloud for decoration
+    {SpriteType::CLOUD, sf::IntRect(86, 2, 46, 14)}             // Cloud sprite
 };
+
 
 // ===== Core Lifecycle Methods =====
 
@@ -54,42 +55,71 @@ TextureManager& TextureManager::getInstance() {
 }
 
 bool TextureManager::initialize() {
-    std::cout << "=== TextureManager Initialization ===" << std::endl;
+    std::cout << "=== TextureManager: Loading Chrome Dino Sprites ===" << std::endl;
     
-    // First, try to load actual sprite files
-    bool spritesLoaded = loadDefaultTextures();
+    // Load the two main sprite sheets
+    bool dinoSheetLoaded = loadTexture("dino_sheet", "assets/sprites/dino_sheet.png");
+    bool obstaclesSheetLoaded = loadTexture("obstacles_sheet", "assets/sprites/obstacles_sheet.png");
     
-    if (!spritesLoaded) {
-        std::cout << "Warning: Could not load sprite files. Creating fallback textures..." << std::endl;
+    if (dinoSheetLoaded && obstaclesSheetLoaded) {
+        // Set up sprite rectangles for successful loads
+        spriteRects = DEFAULT_SPRITE_RECTS;
+        std::cout << "All sprite sheets loaded successfully!" << std::endl;
+        return true;
+    } else {
+        std::cout << "Some sprite sheets failed to load. Creating fallbacks..." << std::endl;
+        return createFallbackTextures();
+    }
+}
+
+
+bool TextureManager::createFallbackTextures() {
+    // Create fallback colored rectangles
+    auto dinoTexture = createFallbackTexture(sf::Color::Green, sf::Vector2u(44, 47));
+    auto obstacleTexture = createFallbackTexture(sf::Color::Red, sf::Vector2u(25, 50));
+    auto birdTexture = createFallbackTexture(sf::Color::Blue, sf::Vector2u(46, 40));
+    
+    if (dinoTexture && obstacleTexture && birdTexture) {
+        textures["dino_fallback"] = std::move(dinoTexture);
+        textures["obstacle_fallback"] = std::move(obstacleTexture);
+        textures["bird_fallback"] = std::move(birdTexture);
         
-        // Create fallback colored rectangles that match our original design
-        auto dinoTexture = createFallbackTexture(sf::Color::Green, sf::Vector2u(44, 47));
-        auto obstacleTexture = createFallbackTexture(sf::Color::Red, sf::Vector2u(25, 50));
-        auto backgroundTexture = createFallbackTexture(sf::Color::White, sf::Vector2u(800, 600));
+        // Set up fallback sprite rectangles (full texture for each)
+        spriteRects[SpriteType::DINO_RUNNING_1] = sf::IntRect(0, 0, 44, 47);
+        spriteRects[SpriteType::DINO_RUNNING_2] = sf::IntRect(0, 0, 44, 47);
+        spriteRects[SpriteType::DINO_JUMPING] = sf::IntRect(0, 0, 44, 47);
+        spriteRects[SpriteType::DINO_DUCKING] = sf::IntRect(0, 0, 59, 30);
+        spriteRects[SpriteType::CACTUS_SMALL] = sf::IntRect(0, 0, 17, 35);
+        spriteRects[SpriteType::CACTUS_LARGE] = sf::IntRect(0, 0, 25, 50);
+        spriteRects[SpriteType::BIRD_FLYING_1] = sf::IntRect(0, 0, 46, 40);
+        spriteRects[SpriteType::BIRD_FLYING_2] = sf::IntRect(0, 0, 46, 40);
         
-        if (dinoTexture && obstacleTexture && backgroundTexture) {
-            textures["dino_fallback"] = std::move(dinoTexture);
-            textures["obstacle_fallback"] = std::move(obstacleTexture);
-            textures["background_fallback"] = std::move(backgroundTexture);
-            
-            // Set up fallback sprite rectangles (full texture for each)
-            spriteRects[SpriteType::DINO_RUNNING_1] = sf::IntRect(0, 0, 44, 47);
-            spriteRects[SpriteType::DINO_RUNNING_2] = sf::IntRect(0, 0, 44, 47);
-            spriteRects[SpriteType::DINO_JUMPING] = sf::IntRect(0, 0, 44, 47);
-            spriteRects[SpriteType::CACTUS_SMALL] = sf::IntRect(0, 0, 25, 50);
-            spriteRects[SpriteType::CACTUS_LARGE] = sf::IntRect(0, 0, 25, 50);
-            spriteRects[SpriteType::BACKGROUND] = sf::IntRect(0, 0, 800, 600);
-            
-            std::cout << "Fallback textures created successfully." << std::endl;
-            return true;
-        } else {
-            std::cerr << "Error: Failed to create fallback textures!" << std::endl;
-            return false;
-        }
+        std::cout << "Fallback textures created successfully." << std::endl;
+        return true;
     }
     
-    std::cout << "TextureManager initialized with " << textures.size() << " textures." << std::endl;
-    return true;
+    std::cerr << "Error: Failed to create fallback textures!" << std::endl;
+    return false;
+}
+
+std::string TextureManager::getTextureNameForSprite(SpriteType spriteType) const {
+    switch (spriteType) {
+        case SpriteType::DINO_RUNNING_1:
+        case SpriteType::DINO_RUNNING_2:
+        case SpriteType::DINO_JUMPING:
+        case SpriteType::DINO_DUCKING:
+            return textures.find("dino_sheet") != textures.end() ? "dino_sheet" : "dino_fallback";
+            
+        case SpriteType::CACTUS_SMALL:
+        case SpriteType::CACTUS_LARGE:
+        case SpriteType::BIRD_FLYING_1:
+        case SpriteType::BIRD_FLYING_2:
+        case SpriteType::CLOUD:
+            return textures.find("obstacles_sheet") != textures.end() ? "obstacles_sheet" : "obstacle_fallback";
+            
+        default:
+            return "dino_fallback";
+    }
 }
 
 void TextureManager::cleanup() {
@@ -186,7 +216,7 @@ sf::Sprite TextureManager::createSprite(SpriteType spriteType) const {
     return sprite;
 }
 
-sf::Sprite TextureManager::createSprite(SpriteType spriteType, float scale) const {
+sf::Sprite TextureManager::createSprite(SpriteType spriteType, double scale) const {
     sf::Sprite sprite = createSprite(spriteType);
     sprite.setScale(scale, scale);
     return sprite;
@@ -197,8 +227,8 @@ sf::Sprite TextureManager::createSprite(SpriteType spriteType, const sf::Vector2
     
     // Calculate scale based on target size
     sf::IntRect spriteRect = getSpriteRect(spriteType);
-    float scaleX = targetSize.x / spriteRect.width;
-    float scaleY = targetSize.y / spriteRect.height;
+    double scaleX = targetSize.x / spriteRect.width;
+    double scaleY = targetSize.y / spriteRect.height;
     
     sprite.setScale(scaleX, scaleY);
     return sprite;
@@ -212,7 +242,7 @@ bool TextureManager::isTextureLoaded(const std::string& name) const {
 
 sf::Vector2f TextureManager::getSpriteSize(SpriteType spriteType) const {
     sf::IntRect rect = getSpriteRect(spriteType);
-    return sf::Vector2f(static_cast<float>(rect.width), static_cast<float>(rect.height));
+    return sf::Vector2f(static_cast<double>(rect.width), static_cast<double>(rect.height));
 }
 
 size_t TextureManager::getLoadedTextureCount() const {
@@ -234,36 +264,36 @@ void TextureManager::printDebugInfo() const {
 
 // ===== Private Helper Methods =====
 
-std::string TextureManager::getTextureNameForSprite(SpriteType spriteType) const {
-    // Map sprite types to their texture names
-    switch (spriteType) {
-        case SpriteType::DINO_RUNNING_1:
-        case SpriteType::DINO_RUNNING_2:
-        case SpriteType::DINO_JUMPING:
-        case SpriteType::DINO_DUCKING:
-            return textures.find("dino_spritesheet") != textures.end() ? "dino_spritesheet" : "dino_fallback";
+// std::string TextureManager::getTextureNameForSprite(SpriteType spriteType) const {
+//     // Map sprite types to their texture names
+//     switch (spriteType) {
+//         case SpriteType::DINO_RUNNING_1:
+//         case SpriteType::DINO_RUNNING_2:
+//         case SpriteType::DINO_JUMPING:
+//         case SpriteType::DINO_DUCKING:
+//             return textures.find("dino_spritesheet") != textures.end() ? "dino_spritesheet" : "dino_fallback";
             
-        case SpriteType::CACTUS_SMALL:
-        case SpriteType::CACTUS_LARGE:
-            return textures.find("obstacle_spritesheet") != textures.end() ? "obstacle_spritesheet" : "obstacle_fallback";
+//         case SpriteType::CACTUS_SMALL:
+//         case SpriteType::CACTUS_LARGE:
+//             return textures.find("obstacle_spritesheet") != textures.end() ? "obstacle_spritesheet" : "obstacle_fallback";
             
-        case SpriteType::BIRD_FLYING_1:
-        case SpriteType::BIRD_FLYING_2:
-            return textures.find("bird_spritesheet") != textures.end() ? "bird_spritesheet" : "obstacle_fallback";
+//         case SpriteType::BIRD_FLYING_1:
+//         case SpriteType::BIRD_FLYING_2:
+//             return textures.find("bird_spritesheet") != textures.end() ? "bird_spritesheet" : "obstacle_fallback";
             
-        case SpriteType::BACKGROUND:
-            return textures.find("background") != textures.end() ? "background" : "background_fallback";
+//         case SpriteType::BACKGROUND:
+//             return textures.find("background") != textures.end() ? "background" : "background_fallback";
             
-        case SpriteType::GROUND:
-            return "ground";
+//         case SpriteType::GROUND:
+//             return "ground";
             
-        case SpriteType::CLOUD:
-            return "cloud";
+//         case SpriteType::CLOUD:
+//             return "cloud";
             
-        default:
-            return "dino_fallback";  // Safe fallback
-    }
-}
+//         default:
+//             return "dino_fallback";  // Safe fallback
+//     }
+// }
 
 bool TextureManager::loadDefaultTextures() {
     bool allLoaded = true;
@@ -308,3 +338,4 @@ std::unique_ptr<sf::Texture> TextureManager::createFallbackTexture(sf::Color col
     }
     
     return texture;
+}

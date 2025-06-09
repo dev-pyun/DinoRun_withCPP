@@ -244,7 +244,11 @@ void Player::update(double deltaTime) {
 }
 
 void Player::render(sf::RenderWindow& window) {
-    window.draw(shape); // Draw player shape on the window
+    // FIXED: Render the sprite instead of the old shape
+    window.draw(currentSprite);  // Draw the actual sprite
+    
+    //===== Optionally render debug bounding box (comment out for release) ==========
+    // window.draw(boundingBox);
 }
 
 void Player::reset() {
@@ -378,3 +382,4 @@ void Player::initializeSprite() {
     applySpriteType(TextureManager::SpriteType::DINO_RUNNING_1);
     
     std::cout << "Player sprite system initialized with enhanced ducking support" << std::endl;
+}
