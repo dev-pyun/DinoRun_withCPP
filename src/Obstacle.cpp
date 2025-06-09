@@ -1,64 +1,209 @@
 #include "Obstacle.hpp"
+#include <iostream>
+#include <random>
 
-const double Obstacle::DEFAULT_WIDTH = 30.0;    // Default width of the obstacle
-const double Obstacle::DEFAULT_HEIGHT = 50.0;   // Default height of the obstacle
-const double Obstacle::GROUND_Y = 400.0;        // Default horizontal position of the obstacle
+// ===== Static Constants =====
+const double Obstacle::GROUND_Y = 400.0;
 
-// Constructor to initialize obstacle at a specific position
+// Define sizes for different obstacle types (based on sprite dimensions)
+const sf::Vector2f Obstacle::SMALL_CACTUS_SIZE = sf::Vector2f(17.0f, 35.0f);
+const sf::Vector2f Obstacle::LARGE_CACTUS_SIZE = sf::Vector2f(25.0f, 50.0f);
+const sf::Vector2f Obstacle::CLUSTER_CACTUS_SIZE = sf::Vector2f(40.0f, 35.0f);  // Future use
+
+// ===== Constructors and Destructor =====
+
 Obstacle::Obstacle(double startX, double startY, double moveSpeed)
     : posX(startX), posY(startY), velocityX(moveSpeed) {
-        // Initialize the obstacle shape
-    shape.setSize(sf::Vector2f(DEFAULT_WIDTH, DEFAULT_HEIGHT)); // Set obstacle size
-    shape.setFillColor(sf::Color::Red); // Set obstacle color
-    shape.setOutlineColor(sf::Color::Black); // Set outline color
-    shape.setOutlineThickness(2); // Set outline thickness
-
-    // Set the initial position of the obstacle
-    shape.setPosition(posX, posY); 
+    
+    // Generate random obstacle type for variety
+    obstacleType = generateRandomType();
+    
+    // Initialize sprite system
+    initializeSprite();
+    
+    std::cout << "Obstacle created at (" << startX << ", " << startY 
+              << ") with type " << static_cast<int>(obstacleType) << std::endl;
 }
 
-// Destructor
+Obstacle::Obstacle(double startX, double startY, double moveSpeed, ObstacleType type)
+    : posX(startX), posY(startY), velocityX(moveSpeed), obstacleType(type) {
+    
+    // Initialize sprite system with specified type
+    initializeSprite();
+    
+    std::cout << "Obstacle created at (" << startX << ", " << startY 
+              << ") with specified type " << static_cast<int>(type) << std::endl;
+}
+
 Obstacle::~Obstacle() {
-    // Destructor does not need to do anything special cuz this is SFML!
+    // Sprite and bounding box cleanup is automatic
 }
 
+// ===== Core Action Methods =====
 
-// Update obstacle position based on velocity and time
 void Obstacle::update(double deltaTime) {
-    // Move the obstacle left based on its velocity and the time elapsed
+    // Move obstacle to the left
     posX -= velocityX * deltaTime;
-
-    // Update the shape position
-    shape.setPosition(posX, posY); 
+    
+    // Update sprite position
+    currentSprite.setPosition(static_cast<float>(posX), static_cast<float>(posY));
+    
+    // Update collision bounding box
+    updateBoundingBox();
 }
 
-// Render the obstacle on the window
 void Obstacle::render(sf::RenderWindow& window) {
-    window.draw(shape); // Draw the obstacle shape on the window
+    // Render the sprite
+    window.draw(currentSprite);
+    
+    // Optionally render debug bounding box (comment out for release)
+    // window.draw(boundingBox);
 }
 
-// Get the shape of the obstacle
+// ===== Information Methods =====
+
 const sf::RectangleShape& Obstacle::getShape() const {
-    return shape; // Return the obstacle shape
+    return boundingBox;
 }
 
-// Get X position of the obstacle
+const sf::Sprite& Obstacle::getSprite() const {
+    return currentSprite;
+}
+
 double Obstacle::getPosX() const {
-    return posX; // Return the X position of the obstacle
+    return posX;
 }
 
-// Get Y position of the obstacle
 double Obstacle::getPosY() const {
-    return posY; // Return the Y position of the obstacle
+    return posY;
 }
 
-// Check if the obstacle is off the screen
+Obstacle::ObstacleType Obstacle::getObstacleType() const {
+    return obstacleType;
+}
+
+sf::Vector2f Obstacle::getSize() const {
+    return currentSize;
+}
+
 bool Obstacle::isOffScreen() const {
-    // Check if the obstacle's X position is less than -50 (off the left side of the screen)
-    return posX < -50; 
+    // Check if obstacle's right edge is off the left side of screen
+    return (posX + currentSize.x) < -50.0;
 }
 
-// Set the horizontal speed of the obstacle
+// ===== Manipulation Methods =====
+
 void Obstacle::setSpeed(double newSpeed) {
-    velocityX = newSpeed; // Set the horizontal speed of the obstacle
+    velocityX = newSpeed;
+}
+
+void Obstacle::changeType(ObstacleType newType) {
+    if (obstacleType != newType) {
+        obstacleType = newType;
+        
+        // Update sprite and size for new type
+        applySpriteForType();
+        updateBoundingBox();
+        
+        std::cout << "Obstacle type changed to " << static_cast<int>(newType) << std::endl;
+    }
+}
+
+// ===== Private Helper Methods =====
+
+void Obstacle::initializeSprite() {
+    // Get size for the obstacle type
+    currentSize = getSizeForType(obstacleType);
+    
+    // Set up bounding box for collision detection
+    boundingBox.setSize(currentSize);
+    boundingBox.setFillColor(sf::Color::Transparent);  // Invisible
+    boundingBox.setOutlineColor(sf::Color::Blue);      // Debug outline (can be removed)
+    boundingBox.setOutlineThickness(1.0f);             // Debug outline (can be removed)
+    
+    // Apply sprite for the current type
+    applySpriteForType();
+    
+    // Set initial positions
+    currentSprite.setPosition(static_cast<float>(posX), static_cast<float>(posY));
+    updateBoundingBox();
+    
+    std::cout << "Obstacle sprite system initialized for type " 
+              << static_cast<int>(obstacleType) << std::endl;
+}
+
+void Obstacle::applySpriteForType() {
+    // Get the appropriate sprite type for texture manager
+    spriteType = getSpriteTypeFromObstacleType(obstacleType);
+    
+    // Get texture manager instance
+    TextureManager& textureManager = TextureManager::getInstance();
+    
+    // Create sprite with current size
+    currentSprite = textureManager.createSprite(spriteType, currentSize);
+    
+    // Position the sprite
+    currentSprite.setPosition(static_cast<float>(posX), static_cast<float>(posY));
+}
+
+void Obstacle::updateBoundingBox() {
+    // Keep bounding box synchronized with sprite position
+    boundingBox.setPosition(static_cast<float>(posX), static_cast<float>(posY));
+}
+
+TextureManager::SpriteType Obstacle::getSpriteTypeFromObstacleType(ObstacleType type) const {
+    switch (type) {
+        case ObstacleType::CACTUS_SMALL:
+            return TextureManager::SpriteType::CACTUS_SMALL;
+            
+        case ObstacleType::CACTUS_LARGE:
+            return TextureManager::SpriteType::CACTUS_LARGE;
+            
+        case ObstacleType::CACTUS_CLUSTER:
+            // For now, use small cactus until cluster sprite is available
+            return TextureManager::SpriteType::CACTUS_SMALL;
+            
+        default:
+            return TextureManager::SpriteType::CACTUS_SMALL;
+    }
+}
+
+sf::Vector2f Obstacle::getSizeForType(ObstacleType type) const {
+    switch (type) {
+        case ObstacleType::CACTUS_SMALL:
+            return SMALL_CACTUS_SIZE;
+            
+        case ObstacleType::CACTUS_LARGE:
+            return LARGE_CACTUS_SIZE;
+            
+        case ObstacleType::CACTUS_CLUSTER:
+            return CLUSTER_CACTUS_SIZE;
+            
+        default:
+            return SMALL_CACTUS_SIZE;
+    }
+}
+
+Obstacle::ObstacleType Obstacle::generateRandomType() {
+    // Create random number generator
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_int_distribution<> dis(0, 100);
+    
+    int randomValue = dis(gen);
+    
+    // Weighted distribution for gameplay balance
+    // 60% small cactus (easier), 40% large cactus (harder)
+    if (randomValue < 60) {
+        return ObstacleType::CACTUS_SMALL;
+    } else {
+        return ObstacleType::CACTUS_LARGE;
+    }
+    
+    // Future: can add CACTUS_CLUSTER with lower probability
+    // else if (randomValue < 95) {
+    //     return ObstacleType::CACTUS_LARGE;
+    // } else {
+    //     return ObstacleType::CACTUS_CLUSTER;
+    // }
 }

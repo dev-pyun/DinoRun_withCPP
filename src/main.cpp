@@ -17,20 +17,21 @@ TODO:
  * 
  * ✅ 4. Add a high score system and display it on the screen - COMPLETED
  * 
+ * ⏳ 4. change the rectangle obstacle to a more complex shape like a bird or a cactus - FUTURE
+ *    ⏳ add a background image and a foreground image - FUTURE
+ *    ⏳ add a bird and change rectangle obstacle to cactus - FUTURE
+ *    ⏳ change dino from rectangular shape to dinosaur sprite - FUTURE
+ *    ⏳ add a sound effect when the dino jumps or collides with an obstacle - FUTURE
+ * 
  * ⏳ 5. make the game more challenging by increasing the speed of obstacles over time - FUTURE
  *    ⏳ randomize the obstacle size and position - FUTURE
  *    ⏳ add bird obstacles that fly over the dino - FUTURE
  * 
  * ⏳ 6. Add a game item system that gives the dino a power-up or a bonus life - FUTURE
  * 
- * ⏳ 7. change the rectangle obstacle to a more complex shape like a bird or a cactus - FUTURE
- *    ⏳ add a background image and a foreground image - FUTURE
- *    ⏳ change dino from rectangular shape to dinosaur sprite - FUTURE
- *    ⏳ add a sound effect when the dino jumps or collides with an obstacle - FUTURE
+ * ⏳ 7. Add a game over screen and a restart button - FUTURE
  * 
- * ⏳ 8. Add a game over screen and a restart button - FUTURE
- * 
- * ⏳ 9. Add a main menu and a settings menu - FUTURE
+ * ⏳ 8. Add a main menu and a settings menu - FUTURE
  */
 
 

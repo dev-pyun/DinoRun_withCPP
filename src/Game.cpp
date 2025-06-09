@@ -2,6 +2,7 @@
 #include "Player.hpp"
 #include "ObstacleManager.hpp"
 #include "CollisionManager.hpp"
+#include "TextureManager.hpp"   // NEW: Add TextureManager include
 #include <iostream>
 
 // Static constant definitions - centralized game configuration
@@ -23,6 +24,7 @@ Game::Game()
     
     // Initialize all subsystems in proper order
     initializeWindow();
+    initializeTextureSystem();  // NEW: Initialize texture system first
     loadResources();
     initializeSystems();
     initializeUI();
@@ -31,18 +33,26 @@ Game::Game()
 }
 
 Game::~Game() {
-    // Smart pointers handle cleanup automatically, but we can log the shutdown
     std::cout << "Game system shutting down..." << std::endl;
     
-    // Explicit cleanup isn't necessary due to RAII, but we could add
-    // save game data, cleanup temporary files, etc. here if needed
+    // Clean up texture manager
+    TextureManager::getInstance().cleanup();
+    
+    // Smart pointers handle other cleanup automatically
+    std::cout << "All systems cleaned up successfully." << std::endl;
 }
 
 int Game::run() {
-    std::cout << "Starting main game loop..." << std::endl;
+    std::cout << "Starting main game loop with sprite system..." << std::endl;
     isRunning = true;
     
-    // Main game loop - the heart of the entire application
+    // Verify texture system is ready
+    TextureManager& textureManager = TextureManager::getInstance();
+    if (textureManager.getLoadedTextureCount() == 0) {
+        std::cerr << "Warning: No textures loaded. Game may not display correctly." << std::endl;
+    }
+    
+    // Main game loop
     while (isRunning && window.isOpen()) {
         double deltaTime = frameClock.restart().asSeconds();
         
@@ -53,10 +63,18 @@ int Game::run() {
         
         // Maintain consistent performance
         maintainFrameRate();
+        
+        // Optional: Log debug info every few seconds
+        static double debugTimer = 0.0;
+        debugTimer += deltaTime;
+        if (debugTimer > 5.0) {  // Every 5 seconds
+            logDebugInfo();
+            debugTimer = 0.0;
+        }
     }
     
     std::cout << "Game loop ended. Final score: " << currentScore << std::endl;
-    return 0;  // Successful termination
+    return 0;
 }
 
 // ===== Initialization Methods =====
@@ -74,6 +92,23 @@ void Game::initializeWindow() {
     window.setFramerateLimit(TARGET_FPS);
     
     std::cout << "Window initialized: " << WINDOW_WIDTH << "x" << WINDOW_HEIGHT << std::endl;
+}
+
+// ===== NEW: Texture system initialization method =====
+void Game::initializeTextureSystem() {
+    std::cout << "Initializing texture management system..." << std::endl;
+    
+    // Get TextureManager instance and initialize it
+    TextureManager& textureManager = TextureManager::getInstance();
+    
+    if (!textureManager.initialize()) {
+        std::cerr << "Warning: TextureManager initialization failed. Using fallback graphics." << std::endl;
+    } else {
+        std::cout << "TextureManager initialized successfully!" << std::endl;
+    }
+    
+    // Print debug information about loaded textures
+    textureManager.printDebugInfo();
 }
 
 void Game::initializeSystems() {
@@ -224,6 +259,16 @@ void Game::handlePlayingStateEvents() {
         if (currentEvent.key.code == sf::Keyboard::Escape) {
             changeState(GameState::GAME_OVER);
         }
+
+        if (currentEvent.key.code == sf::Keyboard::Down) {
+            player->startDucking();
+        }
+    }
+
+    if(currentEvent.type == sf::Event::KeyReleased) {
+        if (currentEvent.key.code == sf::Keyboard::Down) {
+            player->stopDucking();
+        }
     }
 }
 
@@ -324,12 +369,18 @@ void Game::renderUI() {
     }
 }
 
+// ===== Updated renderGameWorld method with enhanced rendering =====
 void Game::renderGameWorld() {
+    // Future: Render background sprite here
+    // TextureManager& tm = TextureManager::getInstance();
+    // sf::Sprite background = tm.createSprite(TextureManager::SpriteType::BACKGROUND);
+    // window.draw(background);
+    
     // Render all game world elements in proper order
     player->render(window);
     obstacleManager->render(window);
     
-    // Future: Add background, particles, effects, etc.
+    // Future: Add particle effects, foreground elements, etc.
 }
 
 // ===== Performance and Utility Methods =====
@@ -345,10 +396,20 @@ std::string Game::formatScore(int score) const {
     return ss.str();
 }
 
+// ===== Updated logDebugInfo method with texture information =====
 void Game::logDebugInfo() const {
-    std::cout << "Game State: " << static_cast<int>(currentState) 
-              << ", Score: " << currentScore 
-              << ", Game Time: " << gameTime << "s" << std::endl;
+    std::cout << "\n=== Game Debug Information ===" << std::endl;
+    std::cout << "Game State: " << static_cast<int>(currentState) << std::endl;
+    std::cout << "Score: " << currentScore << std::endl;
+    std::cout << "Game Time: " << gameTime << "s" << std::endl;
+    std::cout << "Player Position: (" << player->getPosX() << ", " << player->getPosY() << ")" << std::endl;
+    std::cout << "Obstacles Count: " << obstacleManager->getObstacleCount() << std::endl;
+    
+    // Texture system debug info
+    TextureManager& textureManager = TextureManager::getInstance();
+    std::cout << "Loaded Textures: " << textureManager.getLoadedTextureCount() << std::endl;
+    
+    std::cout << "==============================\n" << std::endl;
 }
 
 // ===== Resource Management Helpers =====

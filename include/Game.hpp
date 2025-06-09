@@ -10,6 +10,7 @@
 class Player;
 class ObstacleManager;
 class CollisionManager;
+class TextureManager;
 
 /**
  * Game class: The ultimate orchestrator of the entire game system
@@ -115,6 +116,12 @@ private:
      */
     void initializeWindow();
     
+    /**
+     * Initialize the texture management system
+     * Must be called before creating any game objects that use sprites
+     */
+    void initializeTextureSystem();
+
     /**
      * Initialize all game systems (Player, ObstacleManager, etc.)
      * Creates system objects and establishes their initial states
@@ -290,6 +297,21 @@ private:
     void configureText(sf::Text& text, const std::string& content, 
                       unsigned int size, const sf::Vector2f& position, 
                       const sf::Color& color = sf::Color::Black);
+
+    /**
+     * Reload textures (useful for resolution changes or asset updates)
+     * 
+     * @return true if reload successful
+     */
+    bool reloadTextures();
+
+    /**
+     * Get texture memory usage information
+     * Useful for performance monitoring
+     * 
+     * @return Estimated memory usage in bytes
+     */
+    size_t getTextureMemoryUsage() const;
 
 private:
     // ===== Deleted Methods for Safety =====
