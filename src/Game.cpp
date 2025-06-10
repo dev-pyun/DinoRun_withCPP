@@ -67,7 +67,7 @@ int Game::run() {
         // Optional: Log debug info every few seconds
         static double debugTimer = 0.0;
         debugTimer += deltaTime;
-        if (debugTimer > 5.0) {  // Every 5 seconds
+        if (debugTimer > 10.0 && currentState == GameState::PLAYING) {  // Every 5 seconds
             logDebugInfo();
             debugTimer = 0.0;
         }

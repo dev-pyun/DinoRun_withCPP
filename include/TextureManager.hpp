@@ -30,8 +30,10 @@ public:
         DINO_RUNNING_1,     // First frame of running animation
         DINO_RUNNING_2,     // Second frame of running animation  
         DINO_JUMPING,       // Jumping pose
-        DINO_DUCKING,       // Ducking pose (for future expansion)
+        DINO_DUCKING_1,       // Ducking pose (for future expansion)
+        DINO_DUCKING_2,       // Ducking pose (for future expansion)
         CACTUS_SMALL,       // Small cactus obstacle
+        CACTUS_MID,
         CACTUS_LARGE,       // Large cactus obstacle
         BIRD_FLYING_1,      // First frame of bird animation
         BIRD_FLYING_2,      // Second frame of bird animation
@@ -231,7 +233,7 @@ private:
      * @return true if fallback creation successful
      */
     bool createFallbackTextures();
-    
+
 public:
     // ===== Deleted Methods for Singleton Safety =====
     TextureManager(const TextureManager&) = delete;

@@ -7,7 +7,7 @@ const double Player::GRAVITY = 700.0; // Gravity acceleration
 const double Player::FAST_FALL_MULTIPLIER = 2.5;        // Enhanced gravity for fast falling
 const double Player::FAST_FALL_TERMINAL_VELOCITY = 800.0; // Maximum fall speed to maintain control
 const double Player::RUNNING_ANIMATION_SPEED = 8.0;
-const sf::Vector2f Player::DEFAULT_SIZE = sf::Vector2f(40.0, 60.0);  // Original Rectangular size
+const sf::Vector2f Player::DEFAULT_SIZE = sf::Vector2f(60.0, 64.5);  // Original Rectangular size
 
 Player::Player(double startX, double startY) 
     : posX(startX), 
@@ -29,7 +29,7 @@ Player::Player(double startX, double startY)
     boundingBox.setSize(targetSize);
     boundingBox.setFillColor(sf::Color::Transparent);  // Invisible
     boundingBox.setOutlineColor(sf::Color::Red);       // Debug outline (can be removed)
-    boundingBox.setOutlineThickness(1.0f);             // Debug outline (can be removed)
+    boundingBox.setOutlineThickness(3.0f);             // Debug outline (can be removed)
     
     // Update initial positions
     updateBoundingBox();
@@ -49,6 +49,9 @@ void Player::jump() {
 
         // Change to jumping sprite
         applySpriteType(TextureManager::SpriteType::DINO_JUMPING);
+        if (isDucking) {
+            applySpriteType(TextureManager::SpriteType::DINO_DUCKING_1);
+        }
         
         std::cout << "Player jumped!" << std::endl;
     }
@@ -56,6 +59,9 @@ void Player::jump() {
 
 void Player::startDucking() {
     duckPressed = true;  // Mark that duck key is being pressed
+    targetSize = sf::Vector2f(110.0f * 3 / 4, 53.0f * 3 / 4);
+    boundingBox.setSize(targetSize);
+    updateBoundingBox();
     
     if (isJumping) {
         // ===== AIRBORNE DUCKING: Fast Fall System =====
@@ -74,19 +80,19 @@ void Player::startDucking() {
             // Apply immediate downward velocity adjustment
             if (velocityY < 0) {
                 // Still rising: cut jump short by reducing upward velocity
-                velocityY *= 0.3;  // Reduce to 30% of current upward velocity
+                velocityY = 0.3;  // Immediately going down
                 std::cout << "Jump cut short - starting fast fall!" << std::endl;
             } else {
                 // Already falling: ensure minimum fall speed for responsiveness
                 velocityY = std::max(velocityY, 200.0);  // Minimum fall speed
                 std::cout << "Fast fall activated!" << std::endl;
             }
-            
             // Change to ducking sprite even in air for visual feedback
-            applySpriteType(TextureManager::SpriteType::DINO_DUCKING);
+            applySpriteType(TextureManager::SpriteType::DINO_DUCKING_1);
+            
             
             // Adjust collision box for air ducking
-            targetSize = sf::Vector2f(59.0f, 30.0f);
+            targetSize = sf::Vector2f(110.0f * 3 / 4, 53.0f * 3 / 4);
             boundingBox.setSize(targetSize);
             updateBoundingBox();
         }
@@ -100,10 +106,14 @@ void Player::startDucking() {
             isDucking = true;
             
             // Change to ducking sprite
-            applySpriteType(TextureManager::SpriteType::DINO_DUCKING);
+            if (isRunningAnimationFrame1) {
+                applySpriteType(TextureManager::SpriteType::DINO_DUCKING_1);
+            } else {
+                applySpriteType(TextureManager::SpriteType::DINO_DUCKING_2);
+            }
             
             // Adjust size for ducking (wider, shorter based on sprite dimensions)
-            targetSize = sf::Vector2f(59.0f, 30.0f);
+            targetSize = sf::Vector2f(110.0f * 3 / 4, 53.0f * 3 / 4);
             boundingBox.setSize(targetSize);
             
             // Adjust Y position to keep player on ground level
@@ -130,7 +140,7 @@ void Player::stopDucking() {
             isFastFalling = false;
             
             // Return to normal jumping sprite
-            applySpriteType(TextureManager::SpriteType::DINO_JUMPING);
+            applySpriteType(TextureManager::SpriteType::DINO_DUCKING_1);
             
             // Restore normal collision size
             targetSize = DEFAULT_SIZE;
@@ -205,10 +215,14 @@ void Player::update(double deltaTime) {
             if (duckPressed) {
                 // Duck key still held - transition to ground ducking
                 isDucking = true;
-                applySpriteType(TextureManager::SpriteType::DINO_DUCKING);
+                if (isRunningAnimationFrame1) {
+                    applySpriteType(TextureManager::SpriteType::DINO_DUCKING_1);
+                } else {
+                    applySpriteType(TextureManager::SpriteType::DINO_DUCKING_2);
+                }
                 
                 // Adjust for ground ducking position and size
-                targetSize = sf::Vector2f(59.0f, 30.0f);
+                targetSize = sf::Vector2f(110.0f * 3 / 4, 53.0f * 3 / 4);
                 boundingBox.setSize(targetSize);
                 posY = GROUND_Y - targetSize.y + DEFAULT_SIZE.y;
                 
@@ -230,7 +244,7 @@ void Player::update(double deltaTime) {
      * Only update running animation when player is on ground and not ducking.
      * This prevents animation conflicts during jumping or ducking states.
      */
-    if (!isJumping && !isDucking) {
+    if (!isJumping /*&& !isDucking*/) {
         updateRunningAnimation(deltaTime);
     }
     
@@ -322,8 +336,15 @@ void Player::updateSprite() {
      */
     if (isJumping) {
         applySpriteType(TextureManager::SpriteType::DINO_JUMPING);
+        if (isDucking) {
+            applySpriteType(TextureManager::SpriteType::DINO_DUCKING_1);
+        }
     } else if (isDucking || isFastFalling) {
-        applySpriteType(TextureManager::SpriteType::DINO_DUCKING);
+        if (isRunningAnimationFrame1) {
+            applySpriteType(TextureManager::SpriteType::DINO_DUCKING_1);
+        } else {
+            applySpriteType(TextureManager::SpriteType::DINO_DUCKING_2);
+        }
     } else {
         // Use current running animation frame
         if (isRunningAnimationFrame1) {
