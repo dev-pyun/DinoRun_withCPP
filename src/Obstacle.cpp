@@ -6,9 +6,16 @@
 const double Obstacle::GROUND_Y = 400.0;
 
 // Define sizes for different obstacle types (based on sprite dimensions)
-const sf::Vector2f Obstacle::SMALL_CACTUS_SIZE = sf::Vector2f(17.0f, 35.0f);
-const sf::Vector2f Obstacle::LARGE_CACTUS_SIZE = sf::Vector2f(25.0f, 50.0f);
+const sf::Vector2f Obstacle::SMALL_CACTUS_SIZE = sf::Vector2f(15.0f, 35.0f);
+const sf::Vector2f Obstacle::MID_CACTUS_SIZE = sf::Vector2f(25.0f, 48.0f);
+const sf::Vector2f Obstacle::LARGE_CACTUS_SIZE = sf::Vector2f(32.0f, 68.0f);
 const sf::Vector2f Obstacle::CLUSTER_CACTUS_SIZE = sf::Vector2f(40.0f, 35.0f);  // Future use
+
+// Define collision sizes for different obstacle types
+const sf::Vector2f Obstacle::SMALL_CACTUS_COLLISION_SIZE = sf::Vector2f(1.0f, 35.0f); 
+const sf::Vector2f Obstacle::MID_CACTUS_COLLISION_SIZE = sf::Vector2f(1.5f, 48.0f);
+const sf::Vector2f Obstacle::LARGE_CACTUS_COLLISION_SIZE = sf::Vector2f(2.0f, 68.0f);
+const sf::Vector2f Obstacle::CLUSTER_CACTUS_COLLISION_SIZE = sf::Vector2f(32.0f, 35.0f);  // Future use
 
 // ===== Constructors and Destructor =====
 
@@ -147,15 +154,22 @@ void Obstacle::applySpriteForType() {
 }
 
 void Obstacle::updateBoundingBox() {
-    // Keep bounding box synchronized with sprite position
-    boundingBox.setPosition(static_cast<float>(posX), static_cast<float>(posY));
+    // collision box at the center of sprite
+    sf::Vector2f collisionSize = getCollisionSizeForType(obstacleType);
+    float offsetX = (currentSize.x - collisionSize.x) / 2.0f;
+    float offsetY = (currentSize.y - collisionSize.y) / 2.0f;
+    boundingBox.setPosition(posX + offsetX, posY + offsetY);
+    boundingBox.setSize(collisionSize);
 }
 
 TextureManager::SpriteType Obstacle::getSpriteTypeFromObstacleType(ObstacleType type) const {
     switch (type) {
         case ObstacleType::CACTUS_SMALL:
             return TextureManager::SpriteType::CACTUS_SMALL;
-            
+        
+        case ObstacleType::CACTUS_MID:
+            return TextureManager::SpriteType::CACTUS_MID;    
+        
         case ObstacleType::CACTUS_LARGE:
             return TextureManager::SpriteType::CACTUS_LARGE;
             
@@ -172,6 +186,9 @@ sf::Vector2f Obstacle::getSizeForType(ObstacleType type) const {
     switch (type) {
         case ObstacleType::CACTUS_SMALL:
             return SMALL_CACTUS_SIZE;
+        
+        case ObstacleType::CACTUS_MID:
+            return MID_CACTUS_SIZE;
             
         case ObstacleType::CACTUS_LARGE:
             return LARGE_CACTUS_SIZE;
@@ -194,8 +211,10 @@ Obstacle::ObstacleType Obstacle::generateRandomType() {
     
     // Weighted distribution for gameplay balance
     // 60% small cactus (easier), 40% large cactus (harder)
-    if (randomValue < 60) {
+    if (randomValue < 40) {
         return ObstacleType::CACTUS_SMALL;
+    } else if (randomValue < 80) {
+        return ObstacleType::CACTUS_MID;
     } else {
         return ObstacleType::CACTUS_LARGE;
     }
@@ -206,4 +225,19 @@ Obstacle::ObstacleType Obstacle::generateRandomType() {
     // } else {
     //     return ObstacleType::CACTUS_CLUSTER;
     // }
+}
+
+sf::Vector2f Obstacle::getCollisionSizeForType(ObstacleType type) const {
+    switch (type) {
+        case ObstacleType::CACTUS_SMALL:
+            return SMALL_CACTUS_COLLISION_SIZE;
+        case ObstacleType::CACTUS_MID:
+            return MID_CACTUS_COLLISION_SIZE;
+        case ObstacleType::CACTUS_LARGE:
+            return LARGE_CACTUS_COLLISION_SIZE;
+        case ObstacleType::CACTUS_CLUSTER:
+            return CLUSTER_CACTUS_COLLISION_SIZE;
+        default:
+            return SMALL_CACTUS_COLLISION_SIZE;
+    }
 }

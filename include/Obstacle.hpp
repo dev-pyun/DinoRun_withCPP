@@ -22,6 +22,7 @@ public:
      */
     enum class ObstacleType {
         CACTUS_SMALL,      // Small cactus (easier to jump over)
+        CACTUS_MID,      // MID cactus (easier to jump over)
         CACTUS_LARGE,      // Large cactus (requires precise timing)
         CACTUS_CLUSTER     // Future: cluster of small cacti
     };
@@ -46,8 +47,15 @@ private:
     
     // Size definitions for different obstacle types
     static const sf::Vector2f SMALL_CACTUS_SIZE;
+    static const sf::Vector2f MID_CACTUS_SIZE;
     static const sf::Vector2f LARGE_CACTUS_SIZE;
     static const sf::Vector2f CLUSTER_CACTUS_SIZE;
+    
+    // for the better collision system : DIVIDE SPRITE AND COLLISION
+    static const sf::Vector2f SMALL_CACTUS_COLLISION_SIZE;  
+    static const sf::Vector2f MID_CACTUS_COLLISION_SIZE;
+    static const sf::Vector2f LARGE_CACTUS_COLLISION_SIZE;  
+    static const sf::Vector2f CLUSTER_CACTUS_COLLISION_SIZE;
 
 public:
     /**
@@ -208,6 +216,14 @@ private:
      * @return Random obstacle type
      */
     static ObstacleType generateRandomType();
+
+    /**
+     * Get collision size for specific obstacle type
+     * 
+     * @param type Obstacle type
+     * @return Collision size vector for the type
+     *  */
+    sf::Vector2f getCollisionSizeForType(ObstacleType type) const;
 };
 
 #endif // OBSTACLE_HPP

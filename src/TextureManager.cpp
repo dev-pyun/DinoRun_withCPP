@@ -182,7 +182,19 @@ const sf::Texture* TextureManager::getTexture(const std::string& name) const {
 
 const sf::Texture* TextureManager::getTexture(SpriteType spriteType) const {
     std::string textureName = getTextureNameForSprite(spriteType);
-    return getTexture(textureName);
+    
+    auto it = textures.find(textureName);
+    if (it != textures.end()) {
+        // std::cout << "[DEBUG] ✅ Texture found: " << textureName << std::endl;
+        return it->second.get();
+    } else {
+        // std::cout << "[DEBUG] ❌ Texture NOT found: " << textureName << std::endl;
+        // std::cout << "[DEBUG] Available textures:" << std::endl;
+        // for (const auto& pair : textures) {
+        //     std::cout << "[DEBUG]   - " << pair.first << std::endl;
+        // }
+        return nullptr;
+    }
 }
 
 sf::IntRect TextureManager::getSpriteRect(SpriteType spriteType) const {
@@ -271,6 +283,7 @@ std::string TextureManager::getTextureNameForSprite(SpriteType spriteType) const
             return textures.find("dino_sheet") != textures.end() ? "dino_sheet" : "dino_fallback";
             
         case SpriteType::CACTUS_SMALL:
+        case SpriteType::CACTUS_MID:
         case SpriteType::CACTUS_LARGE:
         case SpriteType::BIRD_FLYING_1:
         case SpriteType::BIRD_FLYING_2:
