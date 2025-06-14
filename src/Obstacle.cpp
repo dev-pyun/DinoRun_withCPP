@@ -14,7 +14,7 @@ const sf::Vector2f Obstacle::CLUSTER_CACTUS_SIZE = sf::Vector2f(40.0f, 35.0f);  
 // Define collision sizes for different obstacle types
 const sf::Vector2f Obstacle::SMALL_CACTUS_COLLISION_SIZE = sf::Vector2f(1.0f, 35.0f); 
 const sf::Vector2f Obstacle::MID_CACTUS_COLLISION_SIZE = sf::Vector2f(1.5f, 48.0f);
-const sf::Vector2f Obstacle::LARGE_CACTUS_COLLISION_SIZE = sf::Vector2f(2.0f, 68.0f);
+const sf::Vector2f Obstacle::LARGE_CACTUS_COLLISION_SIZE = sf::Vector2f(2.5f, 68.0f);
 const sf::Vector2f Obstacle::CLUSTER_CACTUS_COLLISION_SIZE = sf::Vector2f(32.0f, 35.0f);  // Future use
 
 // ===== Constructors and Destructor =====
@@ -64,7 +64,7 @@ void Obstacle::render(sf::RenderWindow& window) {
     window.draw(currentSprite);
     
     // Optionally render debug bounding box (comment out for release)
-    window.draw(boundingBox);
+    // window.draw(boundingBox);
 }
 
 // ===== Information Methods =====
