@@ -24,6 +24,7 @@ Game::Game()
     
     // Initialize all subsystems in proper order
     initializeWindow();
+    initializeSoundSystem();
     initializeTextureSystem();  // NEW: Initialize texture system first
     loadResources();
     initializeSystems();
@@ -94,7 +95,107 @@ void Game::initializeWindow() {
     std::cout << "Window initialized: " << WINDOW_WIDTH << "x" << WINDOW_HEIGHT << std::endl;
 }
 
-// ===== NEW: Texture system initialization method =====
+// ===== Sound System Initialization =====
+bool Game::initializeSoundSystem() {
+    std::cout << "Initializing sound system..." << std::endl;
+    
+    // soundfile loading with multiple paths for better compatibility
+    std::vector<std::string> jumpSoundPaths = {
+        "../assets/sounds/jump.wav",    // relative path from project root
+        "assets/sounds/jump.wav",       // relative path from executable
+        "../assets/sounds/jump.ogg",    // alternative format        
+        "../assets/sounds/jump.ogg",    // another relative path
+        "sounds/jump.wav"               // another relative path       
+    };
+    
+    std::vector<std::string> gameOverSoundPaths = {
+        "../assets/sounds/gameover.wav",
+        "assets/sounds/gameover.wav",
+        "../assets/sounds/gameover.ogg",
+        "sounds/gameover.wav"
+    };
+
+    std::vector<std::string> scoreSoundPaths = {
+        "../assets/sounds/point.wav",
+        "assets/sounds/point.wav",
+        "../assets/sounds/point.ogg",
+        "sounds/point.wav"
+    };
+    
+    // 점프 사운드 로드
+    bool jumpLoaded = false;
+    for (const std::string& path : jumpSoundPaths) {
+        if (loadSoundFile(jumpSoundBuffer, path)) {
+            jumpSound.setBuffer(jumpSoundBuffer);
+            jumpSound.setVolume(70.0f);  // 볼륨 조절 (0-100)
+            jumpLoaded = true;
+            std::cout << "✅ Jump sound loaded from: " << path << std::endl;
+            break;
+        }
+    }
+    
+    // 게임오버 사운드 로드
+    bool gameOverLoaded = false;
+    for (const std::string& path : gameOverSoundPaths) {
+        if (loadSoundFile(gameOverSoundBuffer, path)) {
+            gameOverSound.setBuffer(gameOverSoundBuffer);
+            gameOverSound.setVolume(80.0f);  // 볼륨 조절
+            gameOverLoaded = true;
+            std::cout << "✅ Game over sound loaded from: " << path << std::endl;
+            break;
+        }
+    }
+    
+    // 사운드 파일이 없어도 게임은 계속 진행
+    if (!jumpLoaded) {
+        std::cout << "⚠️ Jump sound file not found - game will run without jump sound" << std::endl;
+    }
+    if (!gameOverLoaded) {
+        std::cout << "⚠️ Game over sound file not found - game will run without game over sound" << std::endl;
+    }
+    
+    std::cout << "Sound system initialization completed" << std::endl;
+    return true;  // 사운드가 없어도 게임은 계속 실행
+}
+
+bool Game::loadSoundFile(sf::SoundBuffer& buffer, const std::string& filename) {
+    if (buffer.loadFromFile(filename)) {
+        return true;
+    }
+    return false;
+}
+
+// ===== Sound Playing Methods =====
+void Game::playJumpSound() {
+    // 점프 사운드가 로드되었고 현재 재생 중이 아니라면 재생
+    if (jumpSoundBuffer.getDuration() != sf::Time::Zero && 
+        jumpSound.getStatus() != sf::Sound::Playing) {
+        jumpSound.play();
+        std::cout << "🎵 Playing jump sound" << std::endl;
+    }
+}
+
+void Game::playGameOverSound() {
+    // 게임오버 사운드가 로드되었다면 재생
+    if (gameOverSoundBuffer.getDuration() != sf::Time::Zero) {
+        gameOverSound.play();
+        std::cout << "🎵 Playing game over sound" << std::endl;
+    }
+}
+
+void Game::playScoreSound() {
+    // 점수 사운드 (현재는 점프 사운드 재사용, 다른 사운드로 교체 가능)
+    if (jumpSoundBuffer.getDuration() != sf::Time::Zero && 
+        scoreSound.getStatus() != sf::Sound::Playing) {
+        scoreSound.setBuffer(jumpSoundBuffer);
+        scoreSound.setVolume(50.0f);  // 더 조용하게
+        scoreSound.setPitch(1.5f);    // 더 높은 음높이로
+        scoreSound.play();
+        std::cout << "🎵 Playing score sound" << std::endl;
+    }
+}
+
+// ===== Texture system initialization method =====
 void Game::initializeTextureSystem() {
     std::cout << "Initializing texture management system..." << std::endl;
     
@@ -252,6 +353,9 @@ void Game::handlePlayingStateEvents() {
         // Handle jump input
         if (currentEvent.key.code == sf::Keyboard::Space || 
             currentEvent.key.code == sf::Keyboard::Up) {
+            if (!player->getIsJumping()) {
+                playJumpSound();  // Play jump sound effect
+            }
             player->jump();
         }
         
@@ -298,9 +402,13 @@ void Game::updatePlayingState(double deltaTime) {
     
     // Calculate current score
     currentScore = calculateScore();
+    if (currentScore > 0 && currentScore % 200 == 0) {
+        playScoreSound();  // Play score sound effect at milestones
+    }
     
     // Check for game-ending conditions
     if (checkCollisions()) {
+        playGameOverSound();  // Play game over sound effect
         changeState(GameState::GAME_OVER);
     }
 }

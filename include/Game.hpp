@@ -2,6 +2,7 @@
 #define GAME_HPP
 
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <memory>
 #include <sstream>
 #include <iomanip>
@@ -68,6 +69,15 @@ private:
     // ===== Resource Management Layer =====
     sf::Font gameFont;                // Main font for all text rendering
     bool fontLoaded;                  // Font loading status flag
+
+    // ===== Sound System =====
+    sf::SoundBuffer jumpSoundBuffer;       // jump sound buffer
+    sf::SoundBuffer gameOverSoundBuffer;   // Game over sound buffer
+    sf::SoundBuffer scoreSoundBuffer;      // scoresound buffer
+    
+    sf::Sound jumpSound;                   // jump sound object
+    sf::Sound gameOverSound;               // Game over sound object
+    sf::Sound scoreSound;                  // Score sound object
     
     // ===== UI Text Elements =====
     sf::Text gameOverText;            // Game over message
@@ -133,6 +143,13 @@ private:
      * Centralizes resource loading with proper error handling
      */
     void loadResources();
+
+    /**
+     *  Initialize the sound system
+     *  Loads sound buffers and sets up sound objects
+     *  Handles multiple file paths for better compatibility
+     */
+    bool initializeSoundSystem(); 
     
     /**
      * Initialize all UI text elements with proper fonts and positioning
@@ -229,6 +246,39 @@ private:
      * Coordinates the reset process across all systems
      */
     void resetGame();
+
+    // ===== Sound Methods =====
+    /**
+     *  Play sound effects based on game events
+     *  These methods handle sound playback for various game actions
+     */
+    /**
+     *  Play sound effect for player jump action
+     *  Uses preloaded sound buffer for efficiency
+     */
+    void playJumpSound();
+    
+    /**
+     *  Play sound effect for game over event
+     *   Uses preloaded sound buffer for efficiency
+     */
+    void playGameOverSound();            
+
+    /**
+     *  Play sound effect for scoring events
+     *  Uses preloaded sound buffer for efficiency
+     */
+    void playScoreSound();               
+
+    /**
+     * Load a sound file into a SoundBuffer
+     * Handles file loading with error checking
+     * 
+     * @param buffer Reference to SoundBuffer to load into
+     * @param filename Path to the sound file
+     * @return true if loaded successfully, false otherwise
+     */
+    bool loadSoundFile(sf::SoundBuffer& buffer, const std::string& filename); 
     
     // ===== UI Management Methods =====
     
