@@ -3,6 +3,7 @@
 #include "Obstacle.hpp"
 #include "ObstacleManager.hpp"
 #include <cmath>  // for sqrt, pow functions
+#include <iostream>
 
 // ===== Basic Collision Detection Methods =====
 
@@ -16,22 +17,93 @@ bool CollisionManager::checkRectangleCollision(const sf::RectangleShape& rect1, 
     return bounds1.intersects(bounds2);
 }
 
-bool CollisionManager::checkBoundsCollision(const sf::Drawable& obj1, const sf::Drawable& obj2) {
-    // This method would require RTTI (Run-Time Type Information) to work properly
-    // For now, we'll implement a basic version that works with common SFML shapes
-    
-    // Note: This is a simplified implementation
-    // In a real-world scenario, we might use a visitor pattern or type erasure
-    // to handle different drawable types more elegantly
-    
-    // For our current needs, we'll focus on the rectangle collision
-    // which covers our main use case (Player and Obstacle collision)
-    
-    // This method serves as a placeholder for future expansion
-    return false; // Placeholder implementation
+bool CollisionManager::checkMultipleRectangleCollision(const std::vector<sf::RectangleShape>& multipleBoxes, 
+                                                      const sf::RectangleShape& singleBox) {
+    // Check if any of the multiple boxes collides with the single box
+    for (const auto& box : multipleBoxes) {
+        if (checkRectangleCollision(box, singleBox)) {
+            return true;  // Early exit on first collision
+        }
+    }
+    return false;  // No collision found
 }
 
-// ===== Game-Specific Collision Methods =====
+// ===== Enhanced Game-Specific Collision Methods =====
+
+bool CollisionManager::checkPlayerObstacleCollisionTriple(const Player& player, const ObstacleManager& obstacleManager) {
+    // Get all obstacles from the obstacle manager
+    const std::vector<Obstacle>& obstacles = obstacleManager.getObstacles();
+    
+    // Check collision against each obstacle using triple collision system
+    for (const auto& obstacle : obstacles) {
+        CollisionInfo info = checkPlayerSingleObstacleTriple(player, obstacle);
+        if (info.hasCollision) {
+            return true;  // Early exit on first collision found
+        }
+    }
+    
+    return false;  // No collision detected
+}
+
+CollisionManager::CollisionInfo CollisionManager::checkPlayerSingleObstacleTriple(const Player& player, 
+                                                                                  const Obstacle& obstacle) {
+    CollisionInfo info;
+    
+    // Get all collision boxes from player
+    const sf::RectangleShape& headBox = player.getHeadCollisionBox();
+    const sf::RectangleShape& bodyBox = player.getBodyCollisionBox();
+    const sf::RectangleShape& tailBox = player.getTailCollisionBox();
+    
+    // Get obstacle collision box
+    const sf::RectangleShape& obstacleBox = obstacle.getShape();
+    
+    // Check each collision box individually
+    info.headHit = checkRectangleCollision(headBox, obstacleBox);
+    info.bodyHit = checkRectangleCollision(bodyBox, obstacleBox);
+    info.tailHit = checkRectangleCollision(tailBox, obstacleBox);
+    
+    // Determine if any collision occurred
+    info.hasCollision = info.headHit || info.bodyHit || info.tailHit;
+    
+    if (info.hasCollision) {
+        // Determine collision type
+        info.collisionType = determineCollisionType(info.headHit, info.bodyHit, info.tailHit);
+        
+        // Calculate collision details using the primary collision box (body is primary)
+        if (info.bodyHit) {
+            CollisionInfo detailedInfo = getDetailedCollision(bodyBox, obstacleBox);
+            info.collisionPoint = detailedInfo.collisionPoint;
+            info.normal = detailedInfo.normal;
+            info.penetrationDepth = detailedInfo.penetrationDepth;
+        } else if (info.headHit) {
+            CollisionInfo detailedInfo = getDetailedCollision(headBox, obstacleBox);
+            info.collisionPoint = detailedInfo.collisionPoint;
+            info.normal = detailedInfo.normal;
+            info.penetrationDepth = detailedInfo.penetrationDepth;
+        } else if (info.tailHit) {
+            CollisionInfo detailedInfo = getDetailedCollision(tailBox, obstacleBox);
+            info.collisionPoint = detailedInfo.collisionPoint;
+            info.normal = detailedInfo.normal;
+            info.penetrationDepth = detailedInfo.penetrationDepth;
+        }
+        
+        // Debug output for development
+        std::cout << "Triple collision detected - Head: " << info.headHit 
+                  << ", Body: " << info.bodyHit 
+                  << ", Tail: " << info.tailHit << std::endl;
+    }
+    
+    return info;
+}
+
+CollisionManager::CollisionType CollisionManager::getPlayerObstacleCollisionType(const Player& player, 
+                                                                                 const Obstacle& obstacle) {
+    CollisionInfo info = checkPlayerSingleObstacleTriple(player, obstacle);
+    return info.collisionType;
+}
+
+
+// ===== Legacy Collision Methods =====
 
 bool CollisionManager::checkPlayerObstacleCollision(const Player& player, const ObstacleManager& obstacleManager) {
     // Get the player's shape for collision testing
@@ -63,7 +135,7 @@ bool CollisionManager::checkPlayerSingleObstacle(const Player& player, const Obs
 
 CollisionManager::CollisionInfo CollisionManager::getDetailedCollision(const sf::RectangleShape& rect1, 
                                                                        const sf::RectangleShape& rect2) {
-    CollisionInfo info;
+    CollisionManager::CollisionInfo info;
     
     // Get bounds of both rectangles
     sf::FloatRect bounds1 = rect1.getGlobalBounds();
@@ -102,6 +174,30 @@ CollisionManager::CollisionInfo CollisionManager::getDetailedCollision(const sf:
     
     return info;
 }
+
+// ===== Utility Methods for Triple Collision System =====
+
+int CollisionManager::countCollisionBoxesHit(const Player& player, const Obstacle& obstacle) {
+    CollisionManager::CollisionInfo info = checkPlayerSingleObstacleTriple(player, obstacle);
+    
+    int count = 0;
+    if (info.headHit) count++;
+    if (info.bodyHit) count++;
+    if (info.tailHit) count++;
+    
+    return count;
+}
+
+bool CollisionManager::isSpecificBoxHit(const Player& player, const Obstacle& obstacle, const std::string& boxType) {
+    CollisionInfo info = checkPlayerSingleObstacleTriple(player, obstacle);
+    
+    if (boxType == "head") return info.headHit;
+    if (boxType == "body") return info.bodyHit;
+    if (boxType == "tail") return info.tailHit;
+    
+    return false;  // Invalid box type
+}
+
 
 // ===== Future Expansion Methods =====
 
@@ -147,4 +243,22 @@ bool CollisionManager::isPointInsideRectangle(const sf::Vector2f& point, const s
             point.x <= bounds.left + bounds.width &&
             point.y >= bounds.top && 
             point.y <= bounds.top + bounds.height);
+}
+
+CollisionManager::CollisionType CollisionManager::determineCollisionType(bool headHit, bool bodyHit, bool tailHit) {
+    // Count how many boxes were hit
+    int hitCount = (headHit ? 1 : 0) + (bodyHit ? 1 : 0) + (tailHit ? 1 : 0);
+    
+    if (hitCount == 0) {
+        return CollisionType::NO_COLLISION;
+    } else if (hitCount > 1) {
+        return CollisionType::MULTIPLE_COLLISION;
+    } else {
+        // Only one box hit - determine which one
+        if (headHit) return CollisionType::HEAD_COLLISION;
+        if (bodyHit) return CollisionType::BODY_COLLISION;
+        if (tailHit) return CollisionType::TAIL_COLLISION;
+    }
+    
+    return CollisionType::NO_COLLISION;  // Should never reach here
 }

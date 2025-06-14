@@ -64,7 +64,7 @@ void Obstacle::render(sf::RenderWindow& window) {
     window.draw(currentSprite);
     
     // Optionally render debug bounding box (comment out for release)
-    // window.draw(boundingBox);
+    window.draw(boundingBox);
 }
 
 // ===== Information Methods =====
@@ -125,8 +125,8 @@ void Obstacle::initializeSprite() {
     // Set up bounding box for collision detection
     boundingBox.setSize(currentSize);
     boundingBox.setFillColor(sf::Color::Transparent);  // Invisible
-    boundingBox.setOutlineColor(sf::Color::Blue);      // Debug outline (can be removed)
-    boundingBox.setOutlineThickness(1.0f);             // Debug outline (can be removed)
+    boundingBox.setOutlineColor(sf::Color::Red);      // Debug outline (can be removed)
+    boundingBox.setOutlineThickness(2.0f);             // Debug outline (can be removed)
     
     // Apply sprite for the current type
     applySpriteForType();

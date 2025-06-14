@@ -1,6 +1,8 @@
 #ifndef PLAYER_HPP
 #define PLAYER_HPP
 
+// #define DEBUG_COLLISION  // Enable debug collision boxes for development
+
 #include <SFML/Graphics.hpp>
 #include "TextureManager.hpp"
 
@@ -40,7 +42,18 @@ private:
     
     // ===== Size Management =====
     sf::Vector2f targetSize;        // Size to scale sprites to
-    sf::RectangleShape boundingBox; // For collision detection (invisible)
+    sf::RectangleShape headCollisionBox; // For head collision detection (invisible)
+    sf::RectangleShape bodyCollisionBox; // For bottom collision detection (invisible)
+    sf::RectangleShape tailCollisionBox; // For ducking collision detection (invisible)
+    sf::RectangleShape boundingBox; // Invisible rectangle for collision detection
+
+    // ===== Triple Collision Box Constants =====
+    static const double HEAD_WIDTH_RATIO;     // Head box width ratio (0.5)
+    static const double HEAD_HEIGHT_RATIO;    // Head box height ratio (0.3)
+    static const double BODY_WIDTH_RATIO;     // Body box width ratio (0.7)
+    static const double BODY_HEIGHT_RATIO;    // Body box height ratio (0.5)
+    static const double TAIL_WIDTH_RATIO;     // Tail box width ratio (0.4)
+    static const double TAIL_HEIGHT_RATIO;    // Tail box height ratio (0.3)
 
     // ===== Physics Constants =====
     static const double GROUND_Y;
@@ -52,6 +65,10 @@ private:
     // ===== Animation Constants =====
     static const double RUNNING_ANIMATION_SPEED;  // Frames per second for running
     static const sf::Vector2f DEFAULT_SIZE;      // Default player size (matches original rectangle)
+
+    // ===== runtime debugging =====
+    bool debugMode;
+
 
 public:
     /**
@@ -107,8 +124,40 @@ public:
      */
     void reset();                   
 
-    // 정보 제공 메서드들 (const: 데이터를 변경하지 않음을 보장)
+    // ===== Information Methods (const: guaranteed not to modify data) =====
 
+    /**
+     * Get the head collision box (upper small area)
+     * Used for precise head collision detection
+     * 
+     * @return Reference to head collision rectangle
+     */
+    const sf::RectangleShape& getHeadCollisionBox() const;
+    
+    /**
+     * Get the body collision box (main torso area)
+     * Used for primary body collision detection
+     * 
+     * @return Reference to body collision rectangle
+     */
+    const sf::RectangleShape& getBodyCollisionBox() const;
+    
+    /**
+     * Get the tail collision box (lower back area)
+     * Used for ducking collision detection
+     * 
+     * @return Reference to tail collision rectangle
+     */
+    const sf::RectangleShape& getTailCollisionBox() const;
+    
+    /**
+     * Get all collision boxes as a vector
+     * Useful for collision managers that check multiple areas
+     * 
+     * @return Vector containing all three collision boxes
+     */
+    std::vector<sf::RectangleShape> getAllCollisionBoxes() const;
+    
     /**
      * Get the collision bounding box (for collision detection)
      * Returns invisible rectangle that matches sprite bounds
@@ -167,6 +216,26 @@ public:
      */
     sf::Vector2f getSize() const;
 
+    // ===== Debugging Methods =====
+        /**
+     * Toggle debug collision box visibility
+     * 
+     * @param enabled true to show collision boxes, false to hide
+     */
+    void setDebugMode(bool enabled);
+    
+    /**
+     * Get current debug mode state
+     * 
+     * @return true if debug mode is enabled
+     */
+    bool isDebugMode() const;
+    
+    /**
+     * Toggle debug mode on/off
+     */
+    void toggleDebugMode();
+
 private:
     // ===== Private Helper Methods =====
     
@@ -201,6 +270,45 @@ private:
      * Sets up default sprite and animation state
      */
     void initializeSprite();
+
+    // ===== Triple Collision Box Management =====
+    
+    /**
+     * Initialize all three collision boxes with proper visual debugging properties
+     * Sets up colors, transparency, and outline for debugging visualization
+     */
+    void initializeTripleCollisionBoxes();
+    
+    /**
+     * Update all collision boxes based on current player state
+     * Handles position, size, and state-specific adjustments
+     */
+    void updateTripleCollisionBoxes();
+    
+    /**
+     * Update collision boxes for normal standing/running state
+     * Standard three-box configuration for regular gameplay
+     */
+    void updateNormalStateCollision();
+    
+    /**
+     * Update collision boxes for ducking state
+     * Adjusts boxes for lowered profile when ducking
+     */
+    void updateDuckingStateCollision();
+    
+    /**
+     * Update collision boxes for jumping state
+     * Maintains boxes during aerial movement
+     */
+    void updateJumpingStateCollision();
+    
+    /**
+     * Update legacy bounding box for backward compatibility
+     * Synchronizes legacy box with body collision box
+     */
+    void updateLegacyBoundingBox();
+
 };
 
 

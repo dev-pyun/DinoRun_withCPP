@@ -260,6 +260,11 @@ void Game::handlePlayingStateEvents() {
             changeState(GameState::GAME_OVER);
         }
 
+        // Debug: Toggle debug mode
+        if (currentEvent.key.code == sf::Keyboard::D) {
+            player->toggleDebugMode();  // D키로 디버깅 모드 토글
+        }
+
         if (currentEvent.key.code == sf::Keyboard::Down) {
             player->startDucking();
         }
@@ -325,7 +330,7 @@ void Game::updateHighScore() {
 
 bool Game::checkCollisions() const {
     // Delegate collision detection to the specialized manager
-    return CollisionManager::checkPlayerObstacleCollision(*player, *obstacleManager);
+    return CollisionManager::checkPlayerObstacleCollisionTriple(*player, *obstacleManager);
 }
 
 void Game::resetGame() {
